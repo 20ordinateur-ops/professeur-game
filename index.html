@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Professeur v3 - Intégral</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        .active-section { display: block !important; }
+        .sidebar-btn { @apply w-full text-left p-4 hover:bg-slate-700 transition flex items-center border-b border-slate-700; }
+        #whiteboard { cursor: crosshair; background-color: white; border: 2px solid #cbd5e1; }
+    </style>
+</head>
+<body class="bg-slate-50 flex h-screen overflow-hidden text-slate-800 font-sans">
+
+    <nav class="w-64 bg-slate-900 text-white flex flex-col shadow-2xl">
+        <div class="p-6 text-center border-b border-slate-700 bg-slate-800">
+            <h1 class="text-xl font-bold text-blue-400">MA CLASSE PRO</h1>
+            <p id="liveClock" class="font-mono text-sm mt-2 text-slate-400">--:--:--</p>
+        </div>
+        <div class="flex-1 overflow-y-auto">
+            <button onclick="show('classes')" class="sidebar-btn"><i class="fas fa-users mr-3"></i> Classes & Appel</button>
+            <button onclick="show('outils')" class="sidebar-btn"><i class="fas fa-stopwatch mr-3"></i> Temps & Outils</button>
+            <button onclick="show('tableau')" class="sidebar-btn"><i class="fas fa-chalkboard mr-3"></i> Tableau Blanc</button>
+            <button onclick="show('fichiers')" class="sidebar-btn"><i class="fas fa-copy mr-3"></i> Mes Documents</button>
+            <button onclick="show('eval_creator')" class="sidebar-btn"><i class="fas fa-pen-nib mr-3"></i> Créer une Éval</button>
+            <button onclick="show('notes')" class="sidebar-btn"><i class="fas fa-graduation-cap mr-3"></i> Notes & Corrigés</button>
+        </div>
+    </nav>
+
+    <main class="flex-1 relative overflow-y-auto p-8">
+
+        <section id="s-classes" class="hidden active-section">
+            <h2 class="text-3xl font-bold mb-6">Gestion des Classes</h2>
+            <div class="bg-white p-4 rounded-xl shadow mb-6 flex gap-4">
+                <input id="newClassName" type="text" placeholder="Nom de la classe..." class="border p-2 rounded flex-1">
+                <button onclick="addClass()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">+ Créer</button>
+            </div>
+            
+            <div id="classesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+            <div id="appelModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                <div class="bg-white w-full max-w-2xl rounded-2xl p-6 shadow-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 id="modalTitle" class="text-2xl font-bold">Liste de classe</h3>
+                        <button onclick="closeAppel()" class="text-slate-400 hover:text-red-500 text-2xl">&times;</button>
+                    </div>
+                    <div class="mb-4 flex gap-2">
+                        <input id="newStudentName" type="text" placeholder="Nom de l'élève..." class="border p-2 rounded flex-1">
+                        <button onclick="addStudent()" class="bg-green-600 text-white px-4 py-2 rounded">Ajouter</button>
+                    </div>
+                    <div id="studentsList" class="space-y-2 max-h-96 overflow-y-auto border-t pt-4"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="s-outils" class="hidden">
+            <h2 class="text-3xl font-bold mb-6">Chronomètre & Minuteur</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-10 rounded-2xl shadow text-center border-b-8 border-green-500">
+                    <h3 class="text-xl font-bold text-slate-400 mb-4">CHRONOMÈTRE</h3>
+                    <div id="chronoDisplay" class="text-7xl font-mono mb-8">00:00:00</div>
+                    <div class="flex justify-center gap-4">
+                        <button id="btnStartChrono" onclick="startChrono()" class="bg-green-500 text-white px-8 py-3 rounded-full font-bold">START</button>
+                        <button onclick="stopChrono()" class="bg-red-500 text-white px-8 py-3 rounded-full font-bold">STOP</button>
+                        <button onclick="resetChrono()" class="bg-slate-200 text-slate-600 px-8 py-3 rounded-full font-bold">RESET</button>
+                    </div>
+                </div>
+                <div class="bg-white p-10 rounded-2xl shadow text-center border-b-8 border-purple-500">
+                    <h3 class="text-xl font-bold text-slate-400 mb-4">MINUTEUR</h3>
+                    <div id="timerDisplay" class="text-7xl font-mono mb-8 text-purple-600">00:00</div>
+                    <input id="timerInput" type="number" value="5" class="border p-2 rounded w-20 text-center mb-4 block mx-auto text-2xl">
+                    <div class="flex justify-center gap-4">
+                        <button id="btnStartTimer" onclick="startTimer()" class="bg-purple-600 text-white px-8 py-3 rounded-full font-bold">LANCER</button>
+                        <button onclick="stopTimer()" class="bg-red-500 text-white px-8 py-3 rounded-full font-bold">STOP</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="s-fichiers" class="hidden">
+            <h2 class="text-3xl font-bold mb-6">Mes Documents (Poésies, Dictées...)</h2>
+            <div class="bg-white p-6 rounded-xl shadow mb-8">
+                <input id="docTitle" type="text" placeholder="Titre du document..." class="w-full border p-3 rounded mb-4 font-bold">
+                <textarea id="docContent" rows="8" class="w-full border p-4 rounded mb-4" placeholder="Tapez votre contenu ici..."></textarea>
+                <button onclick="saveDoc()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold">Enregistrer le fichier</button>
+            </div>
+            <div id="docsList" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+        </section>
+
+        <section id="s-tableau" class="hidden h-full">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-3xl font-bold">Tableau Blanc Interactif</h2>
+                <div class="bg-white p-2 rounded shadow flex gap-4">
+                    <input type="color" id="penColor" class="w-10 h-10 cursor-pointer">
+                    <button onclick="setTabMode('draw')" class="px-4 py-2 border rounded hover:bg-slate-100">Dessiner</button>
+                    <button onclick="setTabMode('text')" class="px-4 py-2 border rounded hover:bg-slate-100">Texte (Clavier)</button>
+                    <button onclick="clearTab()" class="px-4 py-2 bg-red-50 text-red-600 rounded">Tout effacer</button>
+                </div>
+            </div>
+            <canvas id="whiteboard" width="1200" height="600" class="w-full h-[600px] rounded-xl shadow-inner"></canvas>
+        </section>
+
+        <section id="s-eval_creator" class="hidden">
+            <h2 class="text-3xl font-bold mb-6">Créateur d'Évaluations Personnalisées</h2>
+            <div class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-blue-500">
+                <input id="newEvalTitle" type="text" placeholder="Nom de l'évaluation (ex: Mathématiques - Fractions)" class="w-full border p-3 rounded mb-4 font-bold text-xl text-blue-800">
+                <div id="evalQuestionsList" class="space-y-4 mb-6"></div>
+                <button onclick="addQuestionToEval()" class="bg-slate-100 border-2 border-dashed border-slate-300 w-full p-4 rounded text-slate-500 font-bold hover:bg-slate-50">+ Ajouter une question</button>
+                <button onclick="saveEval()" class="mt-8 bg-green-600 text-white px-10 py-3 rounded-xl font-bold text-lg">Publier l'évaluation</button>
+            </div>
+        </section>
+
+        <section id="s-notes" class="hidden">
+            <h2 class="text-3xl font-bold mb-6">Notes & Corrigés</h2>
+            <div class="bg-white p-6 rounded-xl shadow">
+                <p class="mb-4 text-slate-500 italic italic">Sélectionnez une classe et une évaluation pour saisir les notes.</p>
+                <div class="flex gap-4 mb-6">
+                    <select id="selectClassNote" onchange="renderGradesTable()" class="border p-2 rounded flex-1"></select>
+                    <select id="selectEvalNote" onchange="renderGradesTable()" class="border p-2 rounded flex-1"></select>
+                </div>
+                <div id="gradesTableContainer" class="overflow-x-auto"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- DONNEES (Persistence locale) ---
+        let db = JSON.parse(localStorage.getItem('prof_v3_db')) || {
+            classes: [],
+            docs: [],
+            evals: []
+        };
+        let currentClassIdx = null;
+        let tabMode = 'draw';
+
+        function sync() { localStorage.setItem('prof_v3_db', JSON.stringify(db)); }
+
+        // --- NAVIGATION ---
+        function show(target) {
+            document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+            document.getElementById('s-' + target).classList.remove('hidden');
+            if(target === 'classes') renderClasses();
+            if(target === 'fichiers') renderDocs();
+            if(target === 'notes') populateNotesFilters();
+        }
+
+        setInterval(() => {
+            document.getElementById('liveClock').innerText = new Date().toLocaleTimeString('fr-FR');
+        }, 1000);
+
+        // --- CLASSES & APPEL ---
+        function addClass() {
+            let name = document.getElementById('newClassName').value;
+            if(!name) return;
+            db.classes.push({ name: name, students: [] });
+            sync(); renderClasses();
+            document.getElementById('newClassName').value = "";
+        }
+
+        function renderClasses() {
+            const cont = document.getElementById('classesList');
+            cont.innerHTML = db.classes.map((c, i) => `
+                <div class="bg-white p-6 rounded-2xl shadow-lg border-t-8 border-blue-500 hover:shadow-xl transition cursor-pointer">
+                    <h3 onclick="openAppel(${i})" class="text-2xl font-bold text-blue-800 mb-4">${c.name}</h3>
+                    <p class="text-slate-500 mb-4">${c.students.length} élève(s)</p>
+                    <div class="flex justify-between">
+                        <button onclick="openAppel(${i})" class="bg-blue-100 text-blue-600 px-4 py-2 rounded font-bold">Appel / Liste</button>
+                        <button onclick="deleteClass(${i})" class="text-red-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deleteClass(i) {
+            if(confirm("Supprimer cette classe ?")) { db.classes.splice(i, 1); sync(); renderClasses(); }
+        }
+
+        function openAppel(i) {
+            currentClassIdx = i;
+            document.getElementById('modalTitle').innerText = "Appel : " + db.classes[i].name;
+            document.getElementById('appelModal').classList.remove('hidden');
+            renderStudents();
+        }
+
+        function closeAppel() { document.getElementById('appelModal').classList.add('hidden'); }
+
+        function addStudent() {
+            let name = document.getElementById('newStudentName').value;
+            if(!name) return;
+            db.classes[currentClassIdx].students.push({ name: name, status: 'present', notes: {} });
+            sync(); renderStudents();
+            document.getElementById('newStudentName').value = "";
+        }
+
+        function renderStudents() {
+            const cont = document.getElementById('studentsList');
+            const students = db.classes[currentClassIdx].students;
+            cont.innerHTML = students.map((s, i) => `
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                    <span class="font-bold text-lg">${s.name}</span>
+                    <div class="flex gap-2">
+                        <button onclick="togglePresence(${i})" class="px-4 py-1 rounded-full font-bold ${s.status === 'present' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">
+                            ${s.status === 'present' ? 'PRÉSENT' : 'ABSENT'}
+                        </button>
+                        <button onclick="removeStudent(${i})" class="text-red-300 ml-4"><i class="fas fa-user-minus"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function togglePresence(i) {
+            let s = db.classes[currentClassIdx].students[i];
+            s.status = s.status === 'present' ? 'absent' : 'present';
+            sync(); renderStudents();
+        }
+
+        function removeStudent(i) {
+            db.classes[currentClassIdx].students.splice(i, 1);
+            sync(); renderStudents();
+        }
+
+        // --- DOCUMENTS ---
+        function saveDoc() {
+            let title = document.getElementById('docTitle').value;
+            let content = document.getElementById('docContent').value;
+            if(!title) return alert("Mettez un titre !");
+            db.docs.push({ title, content, date: new Date().toLocaleDateString() });
+            sync(); renderDocs();
+            document.getElementById('docTitle').value = "";
+            document.getElementById('docContent').value = "";
+        }
+
+        function renderDocs() {
+            const cont = document.getElementById('docsList');
+            cont.innerHTML = db.docs.map((d, i) => `
+                <div class="bg-white p-4 rounded-lg shadow border border-slate-200">
+                    <h4 class="font-bold border-b mb-2 pb-1 text-blue-700">${d.title}</h4>
+                    <p class="text-sm text-slate-600 line-clamp-3 mb-4">${d.content}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-slate-400">${d.date}</span>
+                        <div class="flex gap-2">
+                             <button onclick="viewDoc(${i})" class="text-blue-500 hover:underline text-sm font-bold">Ouvrir</button>
+                             <button onclick="deleteDoc(${i})" class="text-red-400"><i class="fas fa-trash text-xs"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewDoc(i) {
+            const d = db.docs[i];
+            document.getElementById('docTitle').value = d.title;
+            document.getElementById('docContent').value = d.content;
+            alert("Document chargé dans l'éditeur.");
+        }
+
+        function deleteDoc(i) { db.docs.splice(i,1); sync(); renderDocs(); }
+
+        // --- TEMPS ---
+        let chronoSec = 0;
+        let chronoInt = null;
+        function startChrono() {
+            if(chronoInt) return;
+            chronoInt = setInterval(() => {
+                chronoSec++;
+                let h = Math.floor(chronoSec/3600).toString().padStart(2,'0');
+                let m = Math.floor((chronoSec%3600)/60).toString().padStart(2,'0');
+                let s = (chronoSec%60).toString().padStart(2,'0');
+                document.getElementById('chronoDisplay').innerText = `${h}:${m}:${s}`;
+            }, 1000);
+        }
+        function stopChrono() { clearInterval(chronoInt); chronoInt = null; }
+        function resetChrono() { stopChrono(); chronoSec = 0; document.getElementById('chronoDisplay').innerText = "00:00:00"; }
+
+        let timerInt = null;
+        function startTimer() {
+            let sec = document.getElementById('timerInput').value * 60;
+            if(timerInt) clearInterval(timerInt);
+            timerInt = setInterval(() => {
+                if(sec <= 0) { clearInterval(timerInt); alert("DING ! Temps fini."); return; }
+                sec--;
+                let m = Math.floor(sec/60).toString().padStart(2,'0');
+                let s = (sec%60).toString().padStart(2,'0');
+                document.getElementById('timerDisplay').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+        function stopTimer() { clearInterval(timerInt); }
+
+        // --- TABLEAU ---
+        const canvas = document.getElementById('whiteboard');
+        const ctx = canvas.getContext('2d');
+        let painting = false;
+
+        function setTabMode(m) { tabMode = m; }
+        canvas.addEventListener('mousedown', (e) => {
+            if(tabMode === 'draw') { painting = true; draw(e); }
+            else {
+                let text = prompt("Texte :");
+                if(text) {
+                    ctx.font = "30px Arial";
+                    ctx.fillStyle = document.getElementById('penColor').value;
+                    const r = canvas.getBoundingClientRect();
+                    ctx.fillText(text, e.clientX - r.left, e.clientY - r.top);
+                }
+            }
+        });
+        canvas.addEventListener('mouseup', () => { painting = false; ctx.beginPath(); });
+        canvas.addEventListener('mousemove', draw);
+
+        function draw(e) {
+            if(!painting || tabMode !== 'draw') return;
+            ctx.lineWidth = 4; ctx.lineCap = 'round';
+            ctx.strokeStyle = document.getElementById('penColor').value;
+            const r = canvas.getBoundingClientRect();
+            ctx.lineTo(e.clientX - r.left, e.clientY - r.top);
+            ctx.stroke(); ctx.beginPath(); ctx.moveTo(e.clientX - r.left, e.clientY - r.top);
+        }
+        function clearTab() { ctx.clearRect(0,0,canvas.width, canvas.height); }
+
+        // --- EVALUATIONS ---
+        function addQuestionToEval() {
+            const cont = document.getElementById('evalQuestionsList');
+            const id = Date.now();
+            cont.innerHTML += `
+                <div class="p-4 bg-slate-50 border rounded flex gap-4 q-item">
+                    <input type="text" placeholder="Question..." class="border p-2 rounded flex-1">
+                    <select class="border p-2 rounded">
+                        <option value="libre">Libre</option>
+                        <option value="qcm">QCM</option>
+                    </select>
+                </div>
+            `;
+        }
+
+        function saveEval() {
+            let title = document.getElementById('newEvalTitle').value;
+            if(!title) return alert("Titre manquant !");
+            let questions = [];
+            document.querySelectorAll('.q-item').forEach(el => {
+                questions.push({ q: el.querySelector('input').value, type: el.querySelector('select').value });
+            });
+            db.evals.push({ title, questions });
+            sync(); alert("Évaluation publiée !");
+            document.getElementById('newEvalTitle').value = "";
+            document.getElementById('evalQuestionsList').innerHTML = "";
+        }
+
+        // --- NOTES ---
+        function populateNotesFilters() {
+            const cSel = document.getElementById('selectClassNote');
+            const eSel = document.getElementById('selectEvalNote');
+            cSel.innerHTML = db.classes.map((c,i) => `<option value="${i}">${c.name}</option>`).join('');
+            eSel.innerHTML = db.evals.map((e,i) => `<option value="${i}">${e.title}</option>`).join('');
+            renderGradesTable();
+        }
+
+        function renderGradesTable() {
+            const cI = document.getElementById('selectClassNote').value;
+            const eI = document.getElementById('selectEvalNote').value;
+            if(!db.classes[cI] || !db.evals[eI]) return;
+
+            const students = db.classes[cI].students;
+            const evalTitle = db.evals[eI].title;
+
+            let html = `<table class="w-full text-left border-collapse">
+                <thead><tr class="bg-slate-800 text-white">
+                    <th class="p-3">Élève</th><th class="p-3">Note / 20</th>
+                </tr></thead><tbody>`;
+            
+            students.forEach((s, sI) => {
+                let val = s.notes[evalTitle] || "";
+                html += `<tr class="border-b">
+                    <td class="p-3 font-bold">${s.name}</td>
+                    <td class="p-3"><input type="number" onchange="updateGrade(${cI}, ${sI}, '${evalTitle}', this.value)" value="${val}" class="border p-2 w-24 rounded"></td>
+                </tr>`;
+            });
+            html += "</tbody></table>";
+            document.getElementById('gradesTableContainer').innerHTML = html;
+        }
+
+        function updateGrade(cI, sI, evalTitle, val) {
+            db.classes[cI].students[sI].notes[evalTitle] = val;
+            sync();
+        }
+
+        // INIT
+        renderClasses();
+    </script>
+</body>
+</html>
