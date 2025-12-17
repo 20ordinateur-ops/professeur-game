@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script>
-    <link href="/src/style.css" rel="stylesheet">
         // Supprimer le warning Tailwind CDN de la console
         const originalWarn = console.warn;
         console.warn = function(...args) {
@@ -59,8 +58,11 @@
             <button onclick="show('tableau')" class="sidebar-btn"><i class="fas fa-chalkboard mr-3"></i> Tableau Blanc</button>
             <button onclick="show('fichiers')" class="sidebar-btn"><i class="fas fa-copy mr-3"></i> Mes Documents</button>
             <button onclick="show('agenda')" class="sidebar-btn"><i class="fas fa-calendar-alt mr-3"></i> Agenda</button>
+            <button onclick="show('messagerie')" class="sidebar-btn"><i class="fas fa-envelope mr-3"></i> Messagerie</button>
             <button onclick="show('eval_creator')" class="sidebar-btn"><i class="fas fa-pen-nib mr-3"></i> Créer une Éval</button>
+            <button onclick="show('faire_eval')" class="sidebar-btn"><i class="fas fa-pencil-alt mr-3"></i> Faire une Éval</button>
             <button onclick="show('notes')" class="sidebar-btn"><i class="fas fa-graduation-cap mr-3"></i> Notes & Corrigés</button>
+            <button onclick="show('statistiques')" class="sidebar-btn"><i class="fas fa-chart-bar mr-3"></i> Statistiques</button>
         </div>
     </nav>
 
@@ -87,6 +89,15 @@
                     </div>
                     <p class="text-sm text-slate-500 mb-2 italic">Astuce : Cliquez sur le nom d'un élève pour voir ses détails et sa moyenne.</p>
                     <div id="studentsList" class="space-y-2 max-h-96 overflow-y-auto border-t pt-4"></div>
+                    
+                    <div class="mt-6 flex gap-3">
+                        <button onclick="validateAttendance()" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700">
+                            <i class="fas fa-check-circle mr-2"></i> Valider l'appel
+                        </button>
+                        <button onclick="closeAppel()" class="bg-slate-200 text-slate-600 px-6 py-3 rounded-lg font-bold hover:bg-slate-300">
+                            Fermer
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -222,6 +233,135 @@
             </div>
         </section>
 
+        <section id="s-faire_eval" class="hidden">
+            <h2 class="text-3xl font-bold mb-6">Faire une Évaluation</h2>
+            
+            <!-- Liste des évaluations disponibles -->
+            <div id="evalListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+
+            <!-- Formulaire pour faire l'évaluation -->
+            <div id="evalFormContainer" class="hidden">
+                <button onclick="backToEvalList()" class="mb-4 text-slate-500 hover:text-blue-600 font-bold flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                </button>
+                
+                <div class="bg-white p-8 rounded-2xl shadow-xl border-t-8 border-purple-500">
+                    <h3 id="currentEvalTitle" class="text-3xl font-bold text-purple-800 mb-6"></h3>
+                    <div id="evalQuestionsContainer" class="space-y-6">
+                    </div>
+                    <div class="flex gap-4 mt-8">
+                        <button onclick="saveMyAnswers()" class="bg-purple-600 text-white px-8 py-3 rounded-xl font-bold text-lg hover:bg-purple-700">
+                            <i class="fas fa-save mr-2"></i> Enregistrer mes réponses
+                        </button>
+                        <button onclick="viewMyCorrection()" class="bg-green-600 text-white px-8 py-3 rounded-xl font-bold text-lg hover:bg-green-700">
+                            <i class="fas fa-check-circle mr-2"></i> Voir ma correction
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Correction -->
+            <div id="evalCorrectionContainer" class="hidden">
+                <button onclick="backToEvalForm()" class="mb-4 text-slate-500 hover:text-blue-600 font-bold flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i> Retour à l'évaluation
+                </button>
+                
+                <div class="bg-white p-8 rounded-2xl shadow-xl border-t-8 border-green-500">
+                    <h3 id="correctionEvalTitle" class="text-3xl font-bold text-green-800 mb-6"></h3>
+                    <div id="evalCorrectionContent" class="space-y-6">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="s-messagerie" class="hidden">
+            <h2 class="text-3xl font-bold mb-6">Messagerie</h2>
+            
+            <!-- Formulaire de message -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-cyan-500 mb-8">
+                <h3 class="text-xl font-bold mb-4 text-cyan-700">Nouveau message</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-2">Type de destinataire</label>
+                        <select id="messageRecipientType" onchange="updateRecipientOptions()" class="w-full border p-3 rounded">
+                            <option value="student">Élève</option>
+                            <option value="parent">Parent d'élève</option>
+                            <option value="class">Classe entière</option>
+                        </select>
+                    </div>
+                    <div id="messageRecipientContainer">
+                        <label class="block text-sm font-bold text-slate-600 mb-2">Destinataire</label>
+                        <select id="messageRecipient" class="w-full border p-3 rounded">
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-2">Sujet</label>
+                        <input id="messageSubject" type="text" class="w-full border p-3 rounded" placeholder="Objet du message">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-2">Message</label>
+                        <textarea id="messageContent" rows="6" class="w-full border p-3 rounded" placeholder="Votre message..."></textarea>
+                    </div>
+                    <button onclick="sendMessage()" class="bg-cyan-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-cyan-700">
+                        <i class="fas fa-paper-plane mr-2"></i> Envoyer le message
+                    </button>
+                </div>
+            </div>
+
+            <!-- Liste des messages envoyés -->
+            <div class="bg-white p-6 rounded-xl shadow">
+                <h3 class="text-xl font-bold mb-4 text-slate-700">Messages envoyés</h3>
+                <div id="messagesList" class="space-y-3">
+                </div>
+            </div>
+        </section>
+
+        <section id="s-statistiques" class="hidden">
+            <h2 class="text-3xl font-bold mb-6">Statistiques</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Statistiques générales -->
+                <div class="bg-white p-6 rounded-xl shadow-lg border-t-8 border-indigo-500">
+                    <h3 class="text-xl font-bold mb-4 text-indigo-700 flex items-center gap-2">
+                        <i class="fas fa-chart-pie"></i> Vue d'ensemble
+                    </h3>
+                    <div id="statsOverview" class="space-y-3">
+                    </div>
+                </div>
+
+                <!-- Sélecteur de classe -->
+                <div class="bg-white p-6 rounded-xl shadow-lg border-t-8 border-purple-500">
+                    <h3 class="text-xl font-bold mb-4 text-purple-700 flex items-center gap-2">
+                        <i class="fas fa-filter"></i> Filtrer par classe
+                    </h3>
+                    <select id="statsClassSelect" onchange="updateClassStats()" class="w-full border p-3 rounded mb-4">
+                        <option value="">Toutes les classes</option>
+                    </select>
+                    <div id="statsClassDetails" class="space-y-3">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiques d'absences -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-red-500 mb-6">
+                <h3 class="text-xl font-bold mb-4 text-red-700 flex items-center gap-2">
+                    <i class="fas fa-user-times"></i> Absences
+                </h3>
+                <div id="statsAbsences">
+                </div>
+            </div>
+
+            <!-- Statistiques de notes -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-green-500">
+                <h3 class="text-xl font-bold mb-4 text-green-700 flex items-center gap-2">
+                    <i class="fas fa-graduation-cap"></i> Notes
+                </h3>
+                <div id="statsGrades">
+                </div>
+            </div>
+        </section>
+
         <section id="s-notes" class="hidden">
             <h2 class="text-3xl font-bold mb-6">Saisie des Notes</h2>
             <div class="bg-white p-6 rounded-xl shadow">
@@ -242,7 +382,9 @@
             classes: [],
             docs: [],
             evals: [],
-            homeworks: []
+            homeworks: [],
+            messages: [],
+            attendanceHistory: []
         };
         
         // S'assurer que toutes les propriétés existent
@@ -250,6 +392,8 @@
         db.docs = db.docs || [];
         db.evals = db.evals || [];
         db.homeworks = db.homeworks || [];
+        db.messages = db.messages || [];
+        db.attendanceHistory = db.attendanceHistory || [];
         
         // Vérifier et corriger la structure des classes existantes
         db.classes = db.classes.map(classe => ({
@@ -261,8 +405,16 @@
             }))
         }));
         
+        // Vérifier et corriger la structure des évaluations
+        db.evals = db.evals.map(evaluation => ({
+            title: evaluation.title || 'Sans titre',
+            questions: evaluation.questions || [],
+            teacherAnswers: evaluation.teacherAnswers || {}
+        }));
+        
         let currentClassIdx = null;
         let currentStudentIdx = null;
+        let currentEvalIdx = null;
         let tabMode = 'draw';
 
         function sync() { 
@@ -282,6 +434,9 @@
             if(target === 'fichiers') renderDocs();
             if(target === 'notes') populateNotesFilters();
             if(target === 'agenda') renderAgenda();
+            if(target === 'faire_eval') renderEvalList();
+            if(target === 'messagerie') renderMessagerie();
+            if(target === 'statistiques') renderStatistiques();
         }
 
         setInterval(() => {
@@ -504,6 +659,55 @@
             }
         }
 
+        // --- VALIDATION DE L'APPEL ---
+        function validateAttendance() {
+            if (currentClassIdx === null || !db.classes[currentClassIdx]) {
+                alert("Erreur: classe non sélectionnée");
+                return;
+            }
+
+            const className = db.classes[currentClassIdx].name;
+            const students = db.classes[currentClassIdx].students;
+            const date = new Date().toLocaleDateString('fr-FR');
+            
+            // Compter les présents et absents
+            let presentCount = 0;
+            let absentCount = 0;
+            const attendanceData = [];
+
+            students.forEach(student => {
+                if (student.status === 'present') {
+                    presentCount++;
+                } else {
+                    absentCount++;
+                }
+                attendanceData.push({
+                    name: student.name,
+                    status: student.status
+                });
+            });
+
+            // Sauvegarder dans l'historique
+            db.attendanceHistory.push({
+                className: className,
+                date: date,
+                timestamp: Date.now(),
+                presentCount: presentCount,
+                absentCount: absentCount,
+                students: attendanceData
+            });
+
+            // Réinitialiser tous les statuts à "present"
+            db.classes[currentClassIdx].students.forEach(student => {
+                student.status = 'present';
+            });
+
+            sync();
+            renderStudents();
+            
+            alert(`Appel validé !\n\nPrésents: ${presentCount}\nAbsents: ${absentCount}\n\nLes statuts ont été réinitialisés.`);
+        }
+
         // --- AGENDA / DEVOIRS ---
         function renderAgenda() {
             // Remplir le select des classes
@@ -690,28 +894,671 @@
         // --- EVALUATIONS ---
         function addQuestionToEval() {
             const cont = document.getElementById('evalQuestionsList');
+            const questionId = 'q-' + Date.now();
             cont.innerHTML += `
-                <div class="p-4 bg-slate-50 border rounded flex gap-4 q-item">
-                    <input type="text" placeholder="Question..." class="border p-2 rounded flex-1">
-                    <select class="border p-2 rounded">
-                        <option value="libre">Libre</option>
-                        <option value="qcm">QCM</option>
-                    </select>
+                <div class="p-4 bg-slate-50 border rounded q-item" id="${questionId}">
+                    <div class="flex gap-4 mb-3">
+                        <input type="text" placeholder="Question..." class="border p-2 rounded flex-1 q-text">
+                        <select class="border p-2 rounded q-type" onchange="updateQuestionType('${questionId}')">
+                            <option value="libre">Réponse libre</option>
+                            <option value="qcm">QCM (choix multiples)</option>
+                            <option value="trueFalse">Vrai/Faux</option>
+                        </select>
+                        <button onclick="removeQuestion('${questionId}')" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="q-options hidden">
+                    </div>
                 </div>
             `;
+        }
+
+        function removeQuestion(questionId) {
+            const element = document.getElementById(questionId);
+            if (element && confirm("Supprimer cette question ?")) {
+                element.remove();
+            }
+        }
+
+        function updateQuestionType(questionId) {
+            const questionDiv = document.getElementById(questionId);
+            const type = questionDiv.querySelector('.q-type').value;
+            const optionsDiv = questionDiv.querySelector('.q-options');
+            
+            if (type === 'qcm') {
+                optionsDiv.classList.remove('hidden');
+                optionsDiv.innerHTML = `
+                    <p class="text-sm font-bold text-slate-600 mb-2">Options de réponse :</p>
+                    <div class="space-y-2 mb-2 qcm-options">
+                        <input type="text" placeholder="Option 1" class="border p-2 rounded w-full">
+                        <input type="text" placeholder="Option 2" class="border p-2 rounded w-full">
+                    </div>
+                    <button onclick="addQCMOption('${questionId}')" class="text-sm text-blue-600 hover:underline">
+                        + Ajouter une option
+                    </button>
+                `;
+            } else if (type === 'trueFalse') {
+                optionsDiv.classList.remove('hidden');
+                optionsDiv.innerHTML = `
+                    <p class="text-sm text-slate-500 italic">Les élèves devront choisir entre Vrai et Faux</p>
+                `;
+            } else {
+                optionsDiv.classList.add('hidden');
+                optionsDiv.innerHTML = '';
+            }
+        }
+
+        function addQCMOption(questionId) {
+            const questionDiv = document.getElementById(questionId);
+            const optionsContainer = questionDiv.querySelector('.qcm-options');
+            const optionCount = optionsContainer.querySelectorAll('input').length + 1;
+            
+            const newOption = document.createElement('input');
+            newOption.type = 'text';
+            newOption.placeholder = `Option ${optionCount}`;
+            newOption.className = 'border p-2 rounded w-full';
+            optionsContainer.appendChild(newOption);
         }
 
         function saveEval() {
             let title = document.getElementById('newEvalTitle').value;
             if(!title) return alert("Titre manquant !");
+            
             let questions = [];
             document.querySelectorAll('.q-item').forEach(el => {
-                questions.push({ q: el.querySelector('input').value, type: el.querySelector('select').value });
+                const questionText = el.querySelector('.q-text').value;
+                const type = el.querySelector('.q-type').value;
+                
+                const questionData = {
+                    q: questionText,
+                    type: type
+                };
+                
+                // Si c'est un QCM, récupérer les options
+                if (type === 'qcm') {
+                    const options = [];
+                    el.querySelectorAll('.qcm-options input').forEach(opt => {
+                        if (opt.value.trim()) {
+                            options.push(opt.value.trim());
+                        }
+                    });
+                    questionData.options = options;
+                }
+                
+                questions.push(questionData);
             });
-            db.evals.push({ title, questions });
-            sync(); alert("Évaluation publiée !");
+            
+            if (questions.length === 0) {
+                return alert("Ajoutez au moins une question !");
+            }
+            
+            db.evals.push({ title, questions, teacherAnswers: {} });
+            sync(); 
+            alert("Évaluation publiée !");
             document.getElementById('newEvalTitle').value = "";
             document.getElementById('evalQuestionsList').innerHTML = "";
+        }
+
+        // --- FAIRE UNE EVALUATION (PROFESSEUR) ---
+        function renderEvalList() {
+            const cont = document.getElementById('evalListContainer');
+            
+            // Afficher la liste, masquer le formulaire et la correction
+            document.getElementById('evalListContainer').classList.remove('hidden');
+            document.getElementById('evalFormContainer').classList.add('hidden');
+            document.getElementById('evalCorrectionContainer').classList.add('hidden');
+            
+            if (!db.evals || db.evals.length === 0) {
+                cont.innerHTML = '<p class="col-span-full text-slate-400 italic text-center p-8">Aucune évaluation créée. Créez d\'abord une évaluation dans l\'onglet "Créer une Éval".</p>';
+                return;
+            }
+            
+            cont.innerHTML = db.evals.map((e, i) => {
+                const hasAnswers = e.teacherAnswers && Object.keys(e.teacherAnswers).length > 0;
+                return `
+                    <div class="bg-white p-6 rounded-2xl shadow-lg border-t-8 border-purple-500 hover:shadow-xl transition">
+                        <h3 class="text-2xl font-bold text-purple-800 mb-4">${e.title || 'Sans titre'}</h3>
+                        <p class="text-slate-500 mb-4">${(e.questions || []).length} question(s)</p>
+                        <div class="flex flex-col gap-2">
+                            <button onclick="startEval(${i})" class="bg-purple-600 text-white px-4 py-2 rounded font-bold hover:bg-purple-700">
+                                ${hasAnswers ? 'Modifier mes réponses' : 'Faire l\'évaluation'}
+                            </button>
+                            ${hasAnswers ? `
+                                <button onclick="viewEvalCorrection(${i})" class="bg-green-100 text-green-700 px-4 py-2 rounded font-bold hover:bg-green-200">
+                                    Voir ma correction
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function startEval(evalIdx) {
+            currentEvalIdx = evalIdx;
+            const evaluation = db.evals[evalIdx];
+            
+            // Masquer la liste, afficher le formulaire
+            document.getElementById('evalListContainer').classList.add('hidden');
+            document.getElementById('evalFormContainer').classList.remove('hidden');
+            document.getElementById('evalCorrectionContainer').classList.add('hidden');
+            
+            // Afficher le titre
+            document.getElementById('currentEvalTitle').innerText = evaluation.title || 'Sans titre';
+            
+            // Afficher les questions
+            const questionsContainer = document.getElementById('evalQuestionsContainer');
+            questionsContainer.innerHTML = (evaluation.questions || []).map((q, qIdx) => {
+                const savedAnswer = evaluation.teacherAnswers ? evaluation.teacherAnswers[qIdx] : '';
+                
+                if (q.type === 'qcm') {
+                    // QCM avec cases à cocher
+                    const options = q.options || [];
+                    const savedAnswers = savedAnswer ? savedAnswer.split(',') : [];
+                    
+                    return `
+                        <div class="p-4 bg-slate-50 border-l-4 border-purple-500 rounded">
+                            <p class="font-bold text-lg mb-3 text-slate-800">Question ${qIdx + 1}: ${q.q || 'Question sans texte'}</p>
+                            <p class="text-sm text-slate-500 mb-3 italic">Cochez une ou plusieurs réponses</p>
+                            <div class="space-y-2" id="qcm-${qIdx}">
+                                ${options.map((opt, optIdx) => `
+                                    <label class="flex items-center gap-2 p-2 hover:bg-slate-100 rounded cursor-pointer">
+                                        <input type="checkbox" value="${opt}" ${savedAnswers.includes(opt) ? 'checked' : ''} 
+                                            class="w-4 h-4" onchange="updateQCMAnswer(${qIdx})">
+                                        <span>${opt}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else if (q.type === 'trueFalse') {
+                    // Vrai/Faux
+                    return `
+                        <div class="p-4 bg-slate-50 border-l-4 border-purple-500 rounded">
+                            <p class="font-bold text-lg mb-3 text-slate-800">Question ${qIdx + 1}: ${q.q || 'Question sans texte'}</p>
+                            <div class="flex gap-4" id="tf-${qIdx}">
+                                <label class="flex items-center gap-2 p-3 bg-green-50 border-2 border-green-200 rounded cursor-pointer hover:bg-green-100 flex-1">
+                                    <input type="radio" name="tf-${qIdx}" value="Vrai" ${savedAnswer === 'Vrai' ? 'checked' : ''} class="w-4 h-4">
+                                    <span class="font-bold text-green-700">Vrai</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-3 bg-red-50 border-2 border-red-200 rounded cursor-pointer hover:bg-red-100 flex-1">
+                                    <input type="radio" name="tf-${qIdx}" value="Faux" ${savedAnswer === 'Faux' ? 'checked' : ''} class="w-4 h-4">
+                                    <span class="font-bold text-red-700">Faux</span>
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Réponse libre
+                    return `
+                        <div class="p-4 bg-slate-50 border-l-4 border-purple-500 rounded">
+                            <p class="font-bold text-lg mb-3 text-slate-800">Question ${qIdx + 1}: ${q.q || 'Question sans texte'}</p>
+                            <textarea 
+                                id="answer-${qIdx}" 
+                                rows="4" 
+                                class="w-full border p-3 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                placeholder="Votre réponse ici..."
+                            >${savedAnswer || ''}</textarea>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        function updateQCMAnswer(qIdx) {
+            // Cette fonction est appelée quand on coche/décoche une case dans un QCM
+            // Elle ne fait rien de spécial car la sauvegarde se fait lors du clic sur "Enregistrer"
+        }
+
+        function backToEvalList() {
+            document.getElementById('evalListContainer').classList.remove('hidden');
+            document.getElementById('evalFormContainer').classList.add('hidden');
+            document.getElementById('evalCorrectionContainer').classList.add('hidden');
+            renderEvalList();
+        }
+
+        function saveMyAnswers() {
+            if (currentEvalIdx === null || !db.evals[currentEvalIdx]) {
+                alert("Erreur: évaluation non trouvée");
+                return;
+            }
+            
+            const evaluation = db.evals[currentEvalIdx];
+            const answers = {};
+            
+            // Récupérer toutes les réponses
+            (evaluation.questions || []).forEach((q, qIdx) => {
+                if (q.type === 'qcm') {
+                    // Récupérer les cases cochées
+                    const qcmDiv = document.getElementById(`qcm-${qIdx}`);
+                    if (qcmDiv) {
+                        const checked = Array.from(qcmDiv.querySelectorAll('input[type="checkbox"]:checked'))
+                            .map(cb => cb.value);
+                        answers[qIdx] = checked.join(', ');
+                    }
+                } else if (q.type === 'trueFalse') {
+                    // Récupérer le radio bouton sélectionné
+                    const selected = document.querySelector(`input[name="tf-${qIdx}"]:checked`);
+                    if (selected) {
+                        answers[qIdx] = selected.value;
+                    }
+                } else {
+                    // Réponse libre
+                    const answerField = document.getElementById(`answer-${qIdx}`);
+                    if (answerField) {
+                        answers[qIdx] = answerField.value;
+                    }
+                }
+            });
+            
+            // Sauvegarder les réponses
+            db.evals[currentEvalIdx].teacherAnswers = answers;
+            sync();
+            
+            alert("Vos réponses ont été enregistrées avec succès !");
+        }
+
+        function viewMyCorrection() {
+            if (currentEvalIdx === null || !db.evals[currentEvalIdx]) {
+                alert("Erreur: évaluation non trouvée");
+                return;
+            }
+            
+            viewEvalCorrection(currentEvalIdx);
+        }
+
+        function viewEvalCorrection(evalIdx) {
+            currentEvalIdx = evalIdx;
+            const evaluation = db.evals[evalIdx];
+            
+            // Masquer tout sauf la correction
+            document.getElementById('evalListContainer').classList.add('hidden');
+            document.getElementById('evalFormContainer').classList.add('hidden');
+            document.getElementById('evalCorrectionContainer').classList.remove('hidden');
+            
+            // Afficher le titre
+            document.getElementById('correctionEvalTitle').innerText = evaluation.title || 'Sans titre';
+            
+            // Afficher les questions et réponses
+            const correctionContainer = document.getElementById('evalCorrectionContent');
+            
+            if (!evaluation.teacherAnswers || Object.keys(evaluation.teacherAnswers).length === 0) {
+                correctionContainer.innerHTML = '<p class="text-slate-400 italic text-center p-8">Vous n\'avez pas encore répondu à cette évaluation.</p>';
+                return;
+            }
+            
+            correctionContainer.innerHTML = (evaluation.questions || []).map((q, qIdx) => {
+                const answer = evaluation.teacherAnswers[qIdx] || 'Pas de réponse';
+                return `
+                    <div class="p-6 bg-green-50 border-l-4 border-green-500 rounded-lg">
+                        <p class="font-bold text-xl mb-3 text-slate-800">Question ${qIdx + 1}: ${q.q || 'Question sans texte'}</p>
+                        <div class="bg-white p-4 rounded border border-green-200">
+                            <p class="text-sm font-bold text-green-700 mb-2">Votre réponse:</p>
+                            <p class="text-slate-700 whitespace-pre-wrap">${answer}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function backToEvalForm() {
+            if (currentEvalIdx !== null) {
+                startEval(currentEvalIdx);
+            } else {
+                backToEvalList();
+            }
+        }
+
+        // --- MESSAGERIE ---
+        function renderMessagerie() {
+            updateRecipientOptions();
+            renderMessagesList();
+        }
+
+        function updateRecipientOptions() {
+            const type = document.getElementById('messageRecipientType').value;
+            const recipientSelect = document.getElementById('messageRecipient');
+            
+            recipientSelect.innerHTML = '';
+            
+            if (type === 'class') {
+                // Liste des classes
+                db.classes.forEach((classe, idx) => {
+                    const option = document.createElement('option');
+                    option.value = `class-${idx}`;
+                    option.textContent = classe.name;
+                    recipientSelect.appendChild(option);
+                });
+            } else {
+                // Liste des élèves de toutes les classes
+                db.classes.forEach((classe, classIdx) => {
+                    classe.students.forEach((student, studentIdx) => {
+                        const option = document.createElement('option');
+                        option.value = `student-${classIdx}-${studentIdx}`;
+                        option.textContent = `${student.name} (${classe.name})`;
+                        recipientSelect.appendChild(option);
+                    });
+                });
+            }
+        }
+
+        function sendMessage() {
+            const recipientType = document.getElementById('messageRecipientType').value;
+            const recipient = document.getElementById('messageRecipient').value;
+            const subject = document.getElementById('messageSubject').value;
+            const content = document.getElementById('messageContent').value;
+            
+            if (!recipient) {
+                alert("Veuillez sélectionner un destinataire !");
+                return;
+            }
+            if (!subject) {
+                alert("Veuillez entrer un sujet !");
+                return;
+            }
+            if (!content) {
+                alert("Veuillez entrer un message !");
+                return;
+            }
+            
+            // Déterminer le nom du destinataire
+            let recipientName = '';
+            if (recipientType === 'class') {
+                const classIdx = parseInt(recipient.split('-')[1]);
+                recipientName = db.classes[classIdx].name;
+            } else {
+                const parts = recipient.split('-');
+                const classIdx = parseInt(parts[1]);
+                const studentIdx = parseInt(parts[2]);
+                recipientName = db.classes[classIdx].students[studentIdx].name;
+            }
+            
+            // Sauvegarder le message
+            db.messages.push({
+                id: Date.now(),
+                date: new Date().toLocaleDateString('fr-FR'),
+                time: new Date().toLocaleTimeString('fr-FR'),
+                recipientType: recipientType,
+                recipient: recipient,
+                recipientName: recipientName,
+                subject: subject,
+                content: content
+            });
+            
+            sync();
+            
+            // Réinitialiser le formulaire
+            document.getElementById('messageSubject').value = '';
+            document.getElementById('messageContent').value = '';
+            
+            renderMessagesList();
+            alert("Message envoyé avec succès !");
+        }
+
+        function renderMessagesList() {
+            const cont = document.getElementById('messagesList');
+            
+            if (db.messages.length === 0) {
+                cont.innerHTML = '<p class="text-slate-400 italic text-center py-8">Aucun message envoyé.</p>';
+                return;
+            }
+            
+            cont.innerHTML = db.messages.slice().reverse().map((msg, i) => {
+                const realIdx = db.messages.length - 1 - i;
+                const typeLabel = msg.recipientType === 'class' ? 'Classe' : 
+                                 msg.recipientType === 'parent' ? 'Parent' : 'Élève';
+                
+                return `
+                    <div class="p-4 border rounded-lg bg-slate-50">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="inline-block bg-cyan-100 text-cyan-700 px-2 py-1 rounded text-xs font-bold mr-2">${typeLabel}</span>
+                                <span class="font-bold text-slate-700">${msg.recipientName}</span>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-slate-400">${msg.date} à ${msg.time}</p>
+                                <button onclick="deleteMessage(${realIdx})" class="text-red-400 hover:text-red-600 text-xs mt-1">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="font-bold text-slate-800 mb-1">${msg.subject}</p>
+                        <p class="text-slate-600 text-sm">${msg.content}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteMessage(idx) {
+            if (confirm("Supprimer ce message ?")) {
+                db.messages.splice(idx, 1);
+                sync();
+                renderMessagesList();
+            }
+        }
+
+        // --- STATISTIQUES ---
+        function renderStatistiques() {
+            renderStatsOverview();
+            populateStatsClassSelect();
+            updateClassStats();
+            renderStatsAbsences();
+            renderStatsGrades();
+        }
+
+        function renderStatsOverview() {
+            const cont = document.getElementById('statsOverview');
+            
+            const totalClasses = db.classes.length;
+            const totalStudents = db.classes.reduce((sum, c) => sum + c.students.length, 0);
+            const totalEvals = db.evals.length;
+            const totalAttendance = db.attendanceHistory.length;
+            
+            cont.innerHTML = `
+                <div class="flex justify-between items-center p-3 bg-indigo-50 rounded">
+                    <span class="font-bold text-slate-700">Classes</span>
+                    <span class="text-2xl font-bold text-indigo-600">${totalClasses}</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-blue-50 rounded">
+                    <span class="font-bold text-slate-700">Élèves</span>
+                    <span class="text-2xl font-bold text-blue-600">${totalStudents}</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-purple-50 rounded">
+                    <span class="font-bold text-slate-700">Évaluations</span>
+                    <span class="text-2xl font-bold text-purple-600">${totalEvals}</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-green-50 rounded">
+                    <span class="font-bold text-slate-700">Appels validés</span>
+                    <span class="text-2xl font-bold text-green-600">${totalAttendance}</span>
+                </div>
+            `;
+        }
+
+        function populateStatsClassSelect() {
+            const select = document.getElementById('statsClassSelect');
+            select.innerHTML = '<option value="">Toutes les classes</option>';
+            
+            db.classes.forEach((classe, idx) => {
+                const option = document.createElement('option');
+                option.value = idx;
+                option.textContent = classe.name;
+                select.appendChild(option);
+            });
+        }
+
+        function updateClassStats() {
+            const classIdx = document.getElementById('statsClassSelect').value;
+            const cont = document.getElementById('statsClassDetails');
+            
+            if (classIdx === '') {
+                cont.innerHTML = '<p class="text-slate-400 italic">Sélectionnez une classe pour voir ses statistiques détaillées.</p>';
+                return;
+            }
+            
+            const classe = db.classes[classIdx];
+            const studentCount = classe.students.length;
+            
+            // Calculer la moyenne de la classe
+            let totalGrades = 0;
+            let gradeCount = 0;
+            
+            classe.students.forEach(student => {
+                Object.values(student.notes).forEach(grade => {
+                    const numGrade = parseFloat(grade);
+                    if (!isNaN(numGrade)) {
+                        totalGrades += numGrade;
+                        gradeCount++;
+                    }
+                });
+            });
+            
+            const classAverage = gradeCount > 0 ? (totalGrades / gradeCount).toFixed(2) : '--';
+            
+            // Compter les appels pour cette classe
+            const attendanceCount = db.attendanceHistory.filter(a => a.className === classe.name).length;
+            
+            cont.innerHTML = `
+                <div class="flex justify-between items-center p-3 bg-purple-50 rounded">
+                    <span class="font-bold text-slate-700">Élèves</span>
+                    <span class="text-2xl font-bold text-purple-600">${studentCount}</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-green-50 rounded">
+                    <span class="font-bold text-slate-700">Moyenne</span>
+                    <span class="text-2xl font-bold text-green-600">${classAverage}/20</span>
+                </div>
+                <div class="flex justify-between items-center p-3 bg-blue-50 rounded">
+                    <span class="font-bold text-slate-700">Appels</span>
+                    <span class="text-2xl font-bold text-blue-600">${attendanceCount}</span>
+                </div>
+            `;
+        }
+
+        function renderStatsAbsences() {
+            const cont = document.getElementById('statsAbsences');
+            
+            if (db.attendanceHistory.length === 0) {
+                cont.innerHTML = '<p class="text-slate-400 italic">Aucun appel validé. Validez des appels pour voir les statistiques d\'absence.</p>';
+                return;
+            }
+            
+            // Compter les absences par élève
+            const absencesByStudent = {};
+            
+            db.attendanceHistory.forEach(attendance => {
+                attendance.students.forEach(student => {
+                    if (student.status === 'absent') {
+                        const key = `${attendance.className} - ${student.name}`;
+                        absencesByStudent[key] = (absencesByStudent[key] || 0) + 1;
+                    }
+                });
+            });
+            
+            // Trier par nombre d'absences
+            const sorted = Object.entries(absencesByStudent)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            if (sorted.length === 0) {
+                cont.innerHTML = '<p class="text-green-600 font-bold">Aucune absence enregistrée ! 🎉</p>';
+                return;
+            }
+            
+            cont.innerHTML = `
+                <table class="w-full">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="p-3 text-left font-bold">Élève</th>
+                            <th class="p-3 text-right font-bold">Absences</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        ${sorted.map(([student, count]) => `
+                            <tr>
+                                <td class="p-3">${student}</td>
+                                <td class="p-3 text-right font-bold text-red-600">${count}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function renderStatsGrades() {
+            const cont = document.getElementById('statsGrades');
+            
+            // Calculer les moyennes de tous les élèves
+            const studentAverages = [];
+            
+            db.classes.forEach(classe => {
+                classe.students.forEach(student => {
+                    let total = 0;
+                    let count = 0;
+                    
+                    Object.values(student.notes).forEach(grade => {
+                        const numGrade = parseFloat(grade);
+                        if (!isNaN(numGrade)) {
+                            total += numGrade;
+                            count++;
+                        }
+                    });
+                    
+                    if (count > 0) {
+                        const average = (total / count).toFixed(2);
+                        studentAverages.push({
+                            name: student.name,
+                            className: classe.name,
+                            average: parseFloat(average),
+                            noteCount: count
+                        });
+                    }
+                });
+            });
+            
+            if (studentAverages.length === 0) {
+                cont.innerHTML = '<p class="text-slate-400 italic">Aucune note enregistrée.</p>';
+                return;
+            }
+            
+            // Trier par moyenne décroissante
+            studentAverages.sort((a, b) => b.average - a.average);
+            
+            // Top 10
+            const top10 = studentAverages.slice(0, 10);
+            
+            // Moyenne générale
+            const generalAverage = (studentAverages.reduce((sum, s) => sum + s.average, 0) / studentAverages.length).toFixed(2);
+            
+            cont.innerHTML = `
+                <div class="mb-6 p-4 bg-green-50 rounded-lg">
+                    <p class="text-lg"><span class="font-bold">Moyenne générale:</span> <span class="text-2xl font-bold text-green-700">${generalAverage}/20</span></p>
+                    <p class="text-sm text-slate-600 mt-1">${studentAverages.length} élève(s) avec au moins une note</p>
+                </div>
+                
+                <h4 class="font-bold mb-3">🏆 Top 10 des meilleurs élèves</h4>
+                <table class="w-full">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="p-3 text-left font-bold">Rang</th>
+                            <th class="p-3 text-left font-bold">Élève</th>
+                            <th class="p-3 text-left font-bold">Classe</th>
+                            <th class="p-3 text-right font-bold">Moyenne</th>
+                            <th class="p-3 text-right font-bold">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        ${top10.map((student, idx) => `
+                            <tr class="${idx === 0 ? 'bg-yellow-50' : ''}">
+                                <td class="p-3 font-bold">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1)}</td>
+                                <td class="p-3 font-bold">${student.name}</td>
+                                <td class="p-3 text-slate-600">${student.className}</td>
+                                <td class="p-3 text-right font-bold text-green-600">${student.average}/20</td>
+                                <td class="p-3 text-right text-slate-500">${student.noteCount}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
         }
 
         // --- NOTES ---
