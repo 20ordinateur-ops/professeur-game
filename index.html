@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espace Professeur v3 - Intégral</title>
+    <title>Ma classe</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <style>
@@ -50,7 +50,41 @@
                         <input id="newStudentName" type="text" placeholder="Nom de l'élève..." class="border p-2 rounded flex-1">
                         <button onclick="addStudent()" class="bg-green-600 text-white px-4 py-2 rounded">Ajouter</button>
                     </div>
+                    <p class="text-sm text-slate-500 mb-2 italic">Astuce : Cliquez sur le nom d'un élève pour voir ses détails et sa moyenne.</p>
                     <div id="studentsList" class="space-y-2 max-h-96 overflow-y-auto border-t pt-4"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="s-student-details" class="hidden">
+            <button onclick="show('classes'); openAppel(currentClassIdx)" class="mb-4 text-slate-500 hover:text-blue-600 font-bold flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Retour à la liste
+            </button>
+            
+            <div class="bg-white p-8 rounded-2xl shadow-xl border-t-8 border-indigo-500">
+                <div class="flex justify-between items-start mb-8">
+                    <div>
+                        <h2 id="sd-name" class="text-4xl font-bold text-slate-800 mb-2">Nom de l'élève</h2>
+                        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-bold">Fiche Individuelle</span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-slate-500 font-bold uppercase text-xs tracking-wider">Moyenne Générale</p>
+                        <div id="sd-average" class="text-5xl font-bold text-indigo-600">--/20</div>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold mb-4 border-b pb-2">Historique des notes</h3>
+                <div class="overflow-hidden rounded-lg border border-slate-200">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="p-4 font-bold text-slate-600">Évaluation</th>
+                                <th class="p-4 font-bold text-slate-600 text-right">Note</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sd-history-list" class="divide-y divide-slate-100">
+                            </tbody>
+                    </table>
                 </div>
             </div>
         </section>
@@ -80,7 +114,7 @@
         </section>
 
         <section id="s-fichiers" class="hidden">
-            <h2 class="text-3xl font-bold mb-6">Mes Documents (Poésies, Dictées...)</h2>
+            <h2 class="text-3xl font-bold mb-6">Mes Documents</h2>
             <div class="bg-white p-6 rounded-xl shadow mb-8">
                 <input id="docTitle" type="text" placeholder="Titre du document..." class="w-full border p-3 rounded mb-4 font-bold">
                 <textarea id="docContent" rows="8" class="w-full border p-4 rounded mb-4" placeholder="Tapez votre contenu ici..."></textarea>
@@ -91,7 +125,7 @@
 
         <section id="s-tableau" class="hidden h-full">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-3xl font-bold">Tableau Blanc Interactif</h2>
+                <h2 class="text-3xl font-bold">Tableau Blanc</h2>
                 <div class="bg-white p-2 rounded shadow flex gap-4">
                     <input type="color" id="penColor" class="w-10 h-10 cursor-pointer">
                     <button onclick="setTabMode('draw')" class="px-4 py-2 border rounded hover:bg-slate-100">Dessiner</button>
@@ -103,7 +137,7 @@
         </section>
 
         <section id="s-eval_creator" class="hidden">
-            <h2 class="text-3xl font-bold mb-6">Créateur d'Évaluations Personnalisées</h2>
+            <h2 class="text-3xl font-bold mb-6">Créateur d'Évaluations</h2>
             <div class="bg-white p-6 rounded-xl shadow-lg border-l-8 border-blue-500">
                 <input id="newEvalTitle" type="text" placeholder="Nom de l'évaluation (ex: Mathématiques - Fractions)" class="w-full border p-3 rounded mb-4 font-bold text-xl text-blue-800">
                 <div id="evalQuestionsList" class="space-y-4 mb-6"></div>
@@ -113,7 +147,7 @@
         </section>
 
         <section id="s-notes" class="hidden">
-            <h2 class="text-3xl font-bold mb-6">Notes & Corrigés</h2>
+            <h2 class="text-3xl font-bold mb-6">Saisie des Notes</h2>
             <div class="bg-white p-6 rounded-xl shadow">
                 <p class="mb-4 text-slate-500 italic italic">Sélectionnez une classe et une évaluation pour saisir les notes.</p>
                 <div class="flex gap-4 mb-6">
@@ -127,7 +161,7 @@
     </main>
 
     <script>
-        // --- DONNEES (Persistence locale) ---
+        // --- DONNEES ---
         let db = JSON.parse(localStorage.getItem('prof_v3_db')) || {
             classes: [],
             docs: [],
@@ -199,16 +233,64 @@
             const cont = document.getElementById('studentsList');
             const students = db.classes[currentClassIdx].students;
             cont.innerHTML = students.map((s, i) => `
-                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <span class="font-bold text-lg">${s.name}</span>
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition">
+                    <span onclick="openStudentDetails(${i})" class="font-bold text-lg cursor-pointer text-slate-700 hover:text-blue-600 hover:underline flex items-center gap-2" title="Voir fiche élève">
+                        <i class="fas fa-user-circle text-slate-400"></i> ${s.name}
+                    </span>
                     <div class="flex gap-2">
-                        <button onclick="togglePresence(${i})" class="px-4 py-1 rounded-full font-bold ${s.status === 'present' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">
+                        <button onclick="togglePresence(${i})" class="px-4 py-1 rounded-full font-bold text-xs ${s.status === 'present' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">
                             ${s.status === 'present' ? 'PRÉSENT' : 'ABSENT'}
                         </button>
                         <button onclick="removeStudent(${i})" class="text-red-300 ml-4"><i class="fas fa-user-minus"></i></button>
                     </div>
                 </div>
             `).join('');
+        }
+
+        // --- NOUVELLE FONCTION : DETAILS ELEVE ---
+        function openStudentDetails(studentIndex) {
+            // Fermer la modale d'appel
+            closeAppel();
+            
+            const student = db.classes[currentClassIdx].students[studentIndex];
+            
+            // Remplir le nom
+            document.getElementById('sd-name').innerText = student.name;
+
+            // Calculer la moyenne et l'historique
+            let total = 0;
+            let count = 0;
+            let historyHtml = "";
+
+            // On parcourt les notes (Object key: Titre Eval, value: Note)
+            for (const [evalTitle, grade] of Object.entries(student.notes)) {
+                let noteNum = parseFloat(grade);
+                
+                // Si c'est un nombre valide
+                if(!isNaN(noteNum)) {
+                    total += noteNum;
+                    count++;
+                }
+
+                historyHtml += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 text-slate-700">${evalTitle}</td>
+                        <td class="p-4 font-bold text-right ${!isNaN(noteNum) && noteNum < 10 ? 'text-red-500' : 'text-green-600'}">
+                            ${grade}/20
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // Calcul moyenne
+            let average = count > 0 ? (total / count).toFixed(2) : "--";
+            let colorClass = (average !== "--" && average < 10) ? "text-red-500" : "text-indigo-600";
+            
+            document.getElementById('sd-average').innerHTML = `<span class="${colorClass}">${average}</span><span class="text-2xl text-slate-400">/20</span>`;
+            document.getElementById('sd-history-list').innerHTML = historyHtml || '<tr><td colspan="2" class="p-4 text-center text-slate-400">Aucune note enregistrée.</td></tr>';
+
+            // Afficher la section
+            show('student-details');
         }
 
         function togglePresence(i) {
@@ -218,8 +300,10 @@
         }
 
         function removeStudent(i) {
-            db.classes[currentClassIdx].students.splice(i, 1);
-            sync(); renderStudents();
+            if(confirm("Supprimer cet élève ?")) {
+                db.classes[currentClassIdx].students.splice(i, 1);
+                sync(); renderStudents();
+            }
         }
 
         // --- DOCUMENTS ---
@@ -323,7 +407,6 @@
         // --- EVALUATIONS ---
         function addQuestionToEval() {
             const cont = document.getElementById('evalQuestionsList');
-            const id = Date.now();
             cont.innerHTML += `
                 <div class="p-4 bg-slate-50 border rounded flex gap-4 q-item">
                     <input type="text" placeholder="Question..." class="border p-2 rounded flex-1">
